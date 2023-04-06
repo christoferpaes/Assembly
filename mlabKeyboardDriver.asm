@@ -1,6 +1,6 @@
 # Program: mlKeyboardDriver.asm
-#  Author:christofer Paes 
-#    Date: 11/18/2021
+#  Author: Christofer Paes
+#    Date: 12/08/21
 # Purpose: Practice using XOR, random
 #-------------------------------------------------------------------
 # The left column is random keys depressed on a keyboard.
@@ -53,54 +53,74 @@ last:       .word       0       #last random
 .text
 .globl  main
 main:
-    # get system time
-  	  li     $v0, SYS_TIME       #get system time
-  	  syscall
-    # use system time lsb for seed a1, a0=0 for id
-    	move   $a1, $a0            #time lsw will be seed
-   	 li     $a0, 0              #generator id 0
-  	  li     $v0, SYS_SET_SEED
-    	syscall
+   
+    
     # initialize main loop: s7=max, s6=0 (loop counter) 
-	lw $s7, max 		#16
-	li $s6, 0 		#counter
+     lw $s7, max
+     li $s6,0
     # main loop 
 loop:
+
+ # get system time
+     addiu $2, $0 ,0x000000000000001e
+          #get system time
+    syscall
+    # use system time lsb for seed a1, a0=0 for id
+    move   $a1, $a0            #time lsw will be seed ##a1 register is loaded with the lower order bits 
+    li     $a0, 0              #generator id 0 and now a0 has been zeroed out
+    li     $v0, SYS_SET_SEED
+    syscall
+    
     # pause 'wait' msec using SYS_SLEEP
-	li  $v0, SYS_SLEEP
-	lw $a0, wait
-	syscall
-	
+  #-- could not get the sys_sleep to work on my computer it would crash the program
+    lw $a0, wait
+    li $v0, 32
+    syscall
+  
     # get random integer in a0
-	li $v0, SYS_RAND_INT # random in $a0
-	li $a0, 0	     #generator id = 0 
-	li $a1, 0xFF	     #must enter max random
-	syscall
-	
+ ## getting random number into a
+    addi $v0, $zero, 42
+    add $a0, $zero, $zero
+    addi $a1, $zero, 4
+    syscall 
+   
+    
+  
+     
     # load 'last' into s0
- 	lw 	$s0, last
- 
+   lw $s0, last
+
     # zero top 24 bits of a0 random
-	andi $a0, $a0, 0xFF 	#keep only bottom 8 bits
-
+    andi  $a0, $a0,100
+   
     # save a0 new random lsb into 'last' and move a0 into s1
-	sw $a0, last
-	move $1, $a0 
+    sw $a0, last
+    move $s1, $a0
     # print a0 random lsb as binary
-	li $v0,SYS_PRINT_BIN
-	syscall 
+    la $a0, 0($s1)
+    li $v0, 35
+    syscall
     # print a tab
-
+    la $a0, tab
+    li $v0, 4
+    syscall
     # XOR s0 'last' with s1 new random lsb, save in a register
-
+    xor $s3, $s1, $s0
     # AND the XOR results with s1 new random lsb, print as binary
-
+    and $s4, $s3, $s1
+    la $a0, 0($s4)
+    li $v0, 35
+    syscall
     # print a new line
-
-
+    la $a0, endl
+    li $v0, 4
+    syscall
+    addi $s6, $s6, 1 ##increment 
     # end loop: s6++, if s6==s7 then branch to exit:
+    beq $s6, $s7, exit
+    
     #           else branch to loop:
-
+    jal loop
 
 #------------------------
 # terminate program.
@@ -108,3 +128,5 @@ exit:
     li  $v0, SYS_EXIT   # call code for terminate
     syscall             # system call
 #.end main
+
+
